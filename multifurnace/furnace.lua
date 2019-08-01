@@ -173,11 +173,120 @@ end
 -- Detect a structure based on controller
 local function detect_structure (pos)
 	local node = minetest.get_node(pos)
+	local fd_to_d = minetest.facedir_to_dir(node.param2)
 	local back = vector.add(pos, minetest.facedir_to_dir(node.param2))
+	local op_port_pos
+	local dir
+	local center
 
-	local center = multifurnace.api.detect_center(back, 32)
+	if back.x > pos.x then
+		op_port_pos = {x = back.x + 3, y = back.y, z = back.z}
+		left_port_pos = {x = back.x + 1, y = back.y, z = back.z + 2}
+		right_port_pos = {x = back.x + 1, y = back.y, z = back.z - 2}
+		center = {x = back.x + 1, y = back.y, z = back.z}
+		dir = "X-positive"
+		orient = "x-oriented"
+	end -- x positive
 
-	-- TODO...
+	if back.x < pos.x then
+		op_port_pos = {x = back.x - 3, y = back.y, z = back.z}
+		left_port_pos = {x = back.x - 1, y = back.y, z = back.z - 2}
+		right_port_pos = {x = back.x - 1, y = back.y, z = back.z + 2}
+		center = {x = back.x - 1, y = back.y, z = back.z}
+		dir = "X-negative"
+		orient = "x-oriented"
+	end -- x negative
+
+	if back.z > pos.z then
+		op_port_pos = {x = back.x, y = back.y, z = back.z + 3}
+		left_port_pos = {x = back.x - 2, y = back.y, z = back.z + 1}
+		right_port_pos = {x = back.x + 2, y = back.y, z = back.z + 1}
+		center = {x = back.x, y = back.y, z = back.z + 1}
+		dir = "Z-positive"
+		orient = "z-oriented"
+	end -- z positive
+
+	if back.z < pos.z then
+		op_port_pos = {x = back.x, y = back.y, z = back.z - 3}
+		left_port_pos = {x = back.x + 2, y = back.y, z = back.z - 1}
+		right_port_pos = {x = back.x - 2, y = back.y, z = back.z - 1}
+		center = {x = back.x, y = back.y, z = back.z - 1}
+		dir = "Z-negative"
+		orient = "z-oriented"
+	end -- z negative
+
+	if minetest.get_node(op_port_pos).name == "multifurnace:port" then
+		minetest.chat_send_all("Opposite port is found")
+	else
+		minetest.chat_send_all("Opposite port is not found. Abort operation")
+		return false
+	end
+
+	if minetest.get_node(left_port_pos).name == "multifurnace:port" then
+		minetest.chat_send_all("Left port is found")
+	else
+		minetest.chat_send_all("Left port is not found. Abort operation")
+		return false
+	end
+
+	if minetest.get_node(right_port_pos).name == "multifurnace:port" then
+		minetest.chat_send_all("Right port is found")
+	else
+		minetest.chat_send_all("Right port is not found. Abort operation")
+		return false
+	end
+
+	if (orient == "x-oriented" and (minetest.get_node({x = pos.x, y = pos.y, z = pos.z + 1}).name == "air" 
+	 or minetest.get_node({x = pos.x, y = pos.y, z = pos.z - 1}).name == "air"))
+	 or (orient == "z-oriented" and (minetest.get_node({x = pos.x + 1, y = pos.y, z = pos.z}).name == "air" 
+	 or minetest.get_node({x = pos.x - 1, y = pos.y, z = pos.z}).name == "air")) then
+		minetest.chat_send_all("Wrong structure. Abort operation")
+		return false
+	end
+
+	if (orient == "x-oriented" and (minetest.get_node({x = op_port_pos.x, y = op_port_pos.y, z = op_port_pos.z + 1}).name == "air" 
+	 or minetest.get_node({x = op_port_pos.x, y = op_port_pos.y, z = op_port_pos.z - 1}).name == "air"))
+	 or (orient == "z-oriented" and (minetest.get_node({x = op_port_pos.x + 1, y = op_port_pos.y, z = op_port_pos.z}).name == "air" 
+	 or minetest.get_node({x = op_port_pos.x - 1, y = op_port_pos.y, z = op_port_pos.z}).name == "air")) then
+		minetest.chat_send_all("Wrong structure. Abort operation")
+		return false
+   	end
+
+	if (orient == "z-oriented" and (minetest.get_node({x = left_port_pos.x, y = left_port_pos.y, z = left_port_pos.z + 1}).name == "air" 
+	 or minetest.get_node({x = left_port_pos.x, y = left_port_pos.y, z = left_port_pos.z - 1}).name == "air"))
+	 or (orient == "x-oriented" and (minetest.get_node({x = left_port_pos.x + 1, y = left_port_pos.y, z = left_port_pos.z}).name == "air" 
+	 or minetest.get_node({x = left_port_pos.x - 1, y = left_port_pos.y, z = left_port_pos.z}).name == "air")) then
+		minetest.chat_send_all("Wrong structure. Abort operation")
+		return false
+	end
+
+	if (orient == "z-oriented" and (minetest.get_node({x = right_port_pos.x, y = right_port_pos.y, z = right_port_pos.z + 1}).name == "air" 
+	 or minetest.get_node({x = right_port_pos.x, y = right_port_pos.y, z = right_port_pos.z - 1}).name == "air"))
+	 or (orient == "x-oriented" and (minetest.get_node({x = right_port_pos.x + 1, y = right_port_pos.y, z = right_port_pos.z}).name == "air" 
+	 or minetest.get_node({x = right_port_pos.x - 1, y = right_port_pos.y, z = right_port_pos.z}).name == "air")) then
+		minetest.chat_send_all("Wrong structure. Abort operation")
+		return false
+	end
+
+	minetest.chat_send_all(dir.."; "..node.name.."; "..pos.x..":"..pos.y..":"..pos.z.."; "..back.x..":"..back.y..":"..back.z)
+	--minetest.set_node({x=back.x, y=back.y, z=back.z}, {name="default:mese"})
+
+	local minp1 = { x = center.x - 1, y = center.y - 1, z = center.z - 1 }
+	local maxp1 = { x = center.x + 1, y = center.y - 1, z = center.z + 1 }
+	local minp2 = { x = center.x - 1, y = center.y, z = center.z - 1 }
+	local maxp2 = { x = center.x + 1, y = center.y + 1, z = center.z + 1 }
+	local minp3 = { x = center.x - 2, y = center.y + 1, z = center.z - 2 }
+	local maxp3 = { x = center.x + 2, y = center.y + 1, z = center.z + 2 }
+
+	local _, air = minetest.find_nodes_in_area(minp2, maxp2, "air")
+	local _, bricks1 = minetest.find_nodes_in_area(minp1, maxp1, "metal_melter:heated_bricks")
+	local _, bricks2 = minetest.find_nodes_in_area(minp3, maxp3, "metal_melter:heated_bricks")
+	if air["air"] ~= 18 or bricks1["metal_melter:heated_bricks"] ~= 9 or bricks2["metal_melter:heated_bricks"] < 9 then
+		minetest.chat_send_all("Wrong structure. Abort operation")
+		return false
+	end
+	minetest.chat_send_all("Right structure. Operation's done")
+	return true
 end
 
 -- If pos is part of the structure, this will return a position
@@ -206,7 +315,7 @@ minetest.register_node("multifurnace:controller", {
 	paramtype2 = "facedir",
 	is_ground_content = false,
 	on_timer = controller_timer,
-	on_rightclick = function (pos)
+	on_punch = function (pos)
 		detect_structure(pos)
 	end
 })
