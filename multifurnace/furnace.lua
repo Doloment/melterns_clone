@@ -301,6 +301,42 @@ local function controller_timer (pos, elapsed)
 	return refresh
 end
 
+function part_builder.get_formspec()
+	return "size[8,8.5]"..
+		default.gui_bg..
+		default.gui_bg_img..
+		default.gui_slots..
+		"label[0,0;Part Builder]"..
+		"list[context;pattern;1,1.5;1,1;]"..
+		"list[context;input;2,1;1,2;]"..
+		"list[context;output;6,1.5;1,1;]"..
+		"image[4,1.5;1,1;gui_furnace_arrow_bg.png^[transformR270]"..
+		"list[current_player;main;0,4.25;8,1;]"..
+		"list[current_player;main;0,5.5;8,3;8]"..
+		"listring[current_player;main]"..
+		"listring[context;pattern]"..
+		"listring[current_player;main]"..
+		"listring[context;input]"..
+		"listring[current_player;main]"..
+		"listring[context;output]"..
+		"listring[current_player;main]"..
+		default.get_hotbar_bg(0, 4.25)
+end
+
+local state
+
+local function on_construct(pos)
+	if state ~= true then return nil end
+	local meta = minetest.get_meta(pos)
+	meta:set_string("formspec", part_builder.get_formspec())
+
+	-- Create inventory
+	local inv = meta:get_inventory()
+	inv:set_size('pattern', 1)
+	inv:set_size('input', 2)
+	inv:set_size('output', 1)
+end
+
 -------------------
 -- Registrations --
 -------------------
@@ -315,9 +351,10 @@ minetest.register_node("multifurnace:controller", {
 	paramtype2 = "facedir",
 	is_ground_content = false,
 	on_timer = controller_timer,
-	on_punch = function (pos)
-		detect_structure(pos)
+	on_rightclick = function (pos)
+		if detect_structure(pos) == true then state = true end
 	end
+
 })
 
 minetest.register_node("multifurnace:port", {
@@ -327,7 +364,7 @@ minetest.register_node("multifurnace:port", {
 		"metal_melter_heatbrick.png", "metal_melter_heatbrick.png^multifurnace_intake_back.png",
 		"metal_melter_heatbrick.png^multifurnace_intake_face.png",
 	},
-	groups = {cracky = 3, multifurnace = 2},
+	groups = {cracky = 3, multifurnace = 2, fluid_container = 1},
 	paramtype2 = "facedir",
 	is_ground_content = false,
 })
